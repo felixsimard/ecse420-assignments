@@ -1,5 +1,6 @@
 package ca.mcgill.ecse420.a1;
 
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -7,33 +8,51 @@ import java.util.concurrent.TimeUnit;
 public class MatrixMultiplication {
 
     private static final int NUMBER_THREADS = 1;
-    private static final int MATRIX_SIZE = 2000;
+    private static final int MATRIX_SIZE = 5; // 2000
 
     public static void main(String[] args) {
 
         // Generate two random matrices, same size
         double[][] a = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
         double[][] b = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
-        sequentialMultiplyMatrix(a, b);
-        parallelMultiplyMatrix(a, b, NUMBER_THREADS);
+        double[][] sequential = sequentialMultiplyMatrix(a, b);
+        double[][] parallel = parallelMultiplyMatrix(a, b, NUMBER_THREADS);
+
+//        System.out.println("A:");
+//        printMatrix(a);
+//        System.out.println("B:");
+//        printMatrix(b);
+//
+//        System.out.println("Sequential:");
+//        printMatrix(sequential);
+//
+//        System.out.println("Parallel:");
+//        printMatrix(parallel);
 
         // Plot the execution time versus number of threads for parallel matrix multiplication
-        int maxNumThread = 100;
-        long[][] timeData = new long[maxNumThread][1];
-        for (int t = 0; t < maxNumThread; t++) {
-			timeData[t][0] = measureExecutionTime(true, t);
+        int maxNumThread = 10; // what is the max number of threads to use?
+        double[][] timeData = new double[maxNumThread][2];
+        long elapsed;
+        for (int t = 1; t <= maxNumThread; t++) {
+            elapsed = measureExecutionTime(true, t);
+            timeData[t-1][0] = t;
+            timeData[t-1][1] = elapsed;
+            System.out.println(t + " thread(s) - " + elapsed);
         }
+        System.out.println("Finding best performing number of threads...");
         int bestPerformingNumThread = findBestPerformingNumThread(timeData);
+        // printMatrix(timeData);
+        System.out.println("Best number of threads: " + bestPerformingNumThread);
 
         // Plot the execution time versus matrix size (sequential & parallel) as size of matrix changes
         // Use number of threads for which the parallel execution time was minimum in previous plot
-        int[] matrixSizes = {100, 200, 500, 1000, 2000, 3000, 4000};
-        long[][] timeDataSequential = new long[matrixSizes.length][1];
-        long[][] timeDataParallel = new long[matrixSizes.length][1];
-        for (int s = 0; s < matrixSizes.length; s++) {
-			timeDataSequential[s][0] = measureExecutionTime(false, 0);
-			timeDataParallel[s][0] = measureExecutionTime(true, bestPerformingNumThread);
-        }
+//        int[] matrixSizes = {100, 200, 500, 1000, 2000, 3000, 4000};
+//        long[][] timeDataSequential = new long[matrixSizes.length][1];
+//        long[][] timeDataParallel = new long[matrixSizes.length][1];
+//        for (int s = 0; s < matrixSizes.length; s++) {
+//			timeDataSequential[s][0] = measureExecutionTime(false, 0);
+//			timeDataParallel[s][0] = measureExecutionTime(true, bestPerformingNumThread);
+//        }
 
         // PLOT THE GRAPHS!!
 
@@ -76,15 +95,17 @@ public class MatrixMultiplication {
                 taskExecutor.execute(new MultiplierTask(a, b, c, row, col, MATRIX_SIZE));
             }
         }
-
         // shutdown task executor and wait for all tasks to finish
-		taskExecutor.shutdown();
+        taskExecutor.shutdown();
         try {
-        	taskExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-		} catch (InterruptedException e) {
-        	System.out.println("Thread pool interrupted exception occurred.");
-        	System.exit(-1);
-		}
+            if (!taskExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
+                taskExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            System.out.println("Thread pool interrupted exception occurred.");
+            taskExecutor.shutdownNow();
+            System.exit(-1);
+        }
 
         return c;
     }
@@ -141,19 +162,29 @@ public class MatrixMultiplication {
     /**
      * Helper method to find the best performing number of thread for the parallel matrix implementation.
      *
-     * @param
+     * @param 2D array holding the execution times
      * @return the number of thread used
      */
-    public static int findBestPerformingNumThread(long[][] timeData) {
+    public static int findBestPerformingNumThread(double[][] timeData) {
         int min = Integer.MAX_VALUE;
         for (int i = 0; i < timeData.length; i++) {
-            for (int j = 0; j < timeData[i].length; ) {
-				if(timeData[i][j] < min) {
-					min = i; // recall, i is the number of thread used
-				}
-			}
+            for (int j = 0; j < timeData[i].length; j++) {
+                if(timeData[i][j] < min) {
+                    min = i; // recall, i is the number of thread used
+                }
+            }
         }
-        return min;
+        return min+1;
+    }
+
+    /**
+     * Helper function to print out the matrices for debugging.
+     *
+     * @param matrix
+     */
+    public static void printMatrix(double[][] matrix) {
+        // Reference: https://stackoverflow.com/questions/19648240/java-best-way-to-print-2d-array
+        System.out.println(Arrays.deepToString(matrix).replace("], ", "]\n").replace("[[", "[").replace("]]", "]"));
     }
 
     /**
@@ -174,3 +205,4 @@ public class MatrixMultiplication {
     }
 
 }
+
