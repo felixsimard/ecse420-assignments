@@ -23,6 +23,7 @@ public class MatrixMultiplication {
 
     private static final int NUMBER_THREADS = 1;
     private static final int MATRIX_SIZE = 200;
+    private static final int POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     public static void main(String[] args) {
 
@@ -30,7 +31,7 @@ public class MatrixMultiplication {
         double[][] a = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
         double[][] b = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
         double[][] sequential = sequentialMultiplyMatrix(a, b);
-        double[][] parallel = parallelMultiplyMatrix(a, b, NUMBER_THREADS);
+        double[][] parallel = parallelMultiplyMatrix(a, b, POOL_SIZE);
 
         /**
          * Question 1.1, 1.2
@@ -54,9 +55,9 @@ public class MatrixMultiplication {
          * Question 1.4
          * Plot the execution time versus number of threads for parallel matrix multiplication
          **/
-        int maxNumThread = 20; // what is the max number of threads to use?
+        int maxNumThread = 10; // what is the max number of threads to use?
         double[][] timeData = new double[maxNumThread][2];
-        long elapsed;
+        double elapsed;
         System.out.println("Question 1.4");
         for (int t = 1; t <= maxNumThread; t++) {
             elapsed = measureExecutionTime(true, t);
@@ -71,7 +72,7 @@ public class MatrixMultiplication {
 
         // plot 1.4
         double[][] empty_matrix = new double[timeData.length][timeData[0].length];
-        Plot plot_1_4 = new Plot("Execution time versus number of threads for parallel matrix multiplication", "Number of threads", "Execution time (ns)", empty_matrix, timeData);
+        Plot plot_1_4 = new Plot("Execution time versus number of threads for parallel matrix multiplication", "Number of threads", "Execution time (ms)", empty_matrix, timeData);
         plot_1_4.setAlwaysOnTop(true);
         plot_1_4.pack();
         plot_1_4.setSize(800, 600);
@@ -83,7 +84,8 @@ public class MatrixMultiplication {
          * Plot the execution time versus matrix size (sequential & parallel) as size of matrix changes.
          * Use number of threads for which the parallel execution time was minimum in previous plot.
          **/
-        int[] matrixSizes = {100, 200, 500, 1000, 2000, 3000, 4000}; //
+        int[] matrixSizes = {100, 200, 500, 1000, 2000, 3000, 4000}; // original
+        //int[] matrixSizes = {25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000, 3500, 4000};
         double[][] timeDataSequential = new double[matrixSizes.length][2];
         double[][] timeDataParallel = new double[matrixSizes.length][2];
         System.out.println("Question 1.5");
@@ -99,7 +101,7 @@ public class MatrixMultiplication {
         }
 
         // plot 1.5
-        Plot plot_1_5 = new Plot("Execution time as a function of matrix size for both parallel and sequential methods", "Matrix size", "Execution time (ns)", timeDataSequential, timeDataParallel);
+        Plot plot_1_5 = new Plot("Execution time as a function of matrix size for both parallel and sequential methods", "Matrix size", "Execution time (ms)", timeDataSequential, timeDataParallel);
         plot_1_5.setAlwaysOnTop(true);
         plot_1_5.pack();
         plot_1_5.setSize(800, 600);
@@ -227,8 +229,9 @@ public class MatrixMultiplication {
      * @param numThreads indicates the number of threads to use if using the parallel implementation
      * @return time elapsed for multiplication algorithm to complete
      */
-    public static long measureExecutionTime(boolean isParallel, int numThreads) {
-        long start, end, diff;
+    public static double measureExecutionTime(boolean isParallel, int numThreads) {
+        long start, end;
+        double diff;
         double[][] a = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
         double[][] b = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
         start = System.nanoTime();
@@ -238,7 +241,7 @@ public class MatrixMultiplication {
             sequentialMultiplyMatrix(a, b);
         }
         end = System.nanoTime();
-        diff = end - start;
+        diff = (end - start)/1e6;
         return diff;
     }
 
