@@ -22,7 +22,7 @@ public class MatrixMultiplication {
     /**--- Question 1 ---**/
 
     private static final int NUMBER_THREADS = 1;
-    private static final int MATRIX_SIZE = 2000;
+    private static final int MATRIX_SIZE = 200;
 
     public static void main(String[] args) {
 
@@ -116,6 +116,8 @@ public class MatrixMultiplication {
          *
          **/
 
+        return;
+
 
     }
 
@@ -175,6 +177,9 @@ public class MatrixMultiplication {
         }
         // shutdown task executor and wait for all tasks to finish
         taskExecutor.shutdown();
+
+        while (!taskExecutor.isTerminated());
+
         try {
             if (!taskExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS)) {
                 taskExecutor.shutdownNow();
