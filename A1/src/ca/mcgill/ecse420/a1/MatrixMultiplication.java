@@ -2,9 +2,7 @@ package ca.mcgill.ecse420.a1;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import javax.swing.*;
 
@@ -18,7 +16,7 @@ public class MatrixMultiplication {
     /**--- Question 1 ---**/
 
     private static final int NUMBER_THREADS = 1;
-    private static final int MATRIX_SIZE = 200;
+    private static final int MATRIX_SIZE = 4000;
     private static final int POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     public static void main(String[] args) {
@@ -26,8 +24,24 @@ public class MatrixMultiplication {
         // Generate two random matrices, same size
         double[][] a = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
         double[][] b = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
-        double[][] sequential = sequentialMultiplyMatrix(a, b);
-        double[][] parallel = parallelMultiplyMatrix2(a, b, POOL_SIZE);
+//        double[][] forkJoin = parallelMultiplyMatrix(a, b, 4);
+//        double[][] sequential = sequentialMultiplyMatrix(a, b);
+//        double[][] parallel = parallelMultiplyMatrixForkJoin(a, b, 4);
+//
+//        System.out.println("Sequential equals parallel computation? " + Arrays.deepEquals(parallel, forkJoin));
+
+//        int numThreads = 4;
+//
+//
+//        double forkJoinTime = measureExecutionTimeForkJoin(MATRIX_SIZE, true, numThreads);
+////        double parallel1Time = measureExecutionTime(MATRIX_SIZE, true, numThreads);
+////        double parallel2Time =  measureExecutionTime2(MATRIX_SIZE, true, numThreads);
+//        System.out.println("Fork Join time: " + forkJoinTime);
+//        System.out.println("Parallel 1 time: " + parallel1Time);
+//        System.out.println("Parallel 2 time: " + parallel2Time);
+
+
+
 
 
 
@@ -35,31 +49,19 @@ public class MatrixMultiplication {
          * Question 1.1, 1.2
          * Implementing sequential and parallel matrix multiplication methods.
          */
-//        System.out.println("Sequential equals parallel computation? " + Arrays.deepEquals(parallel, parallel2));
 
-        System.out.println("A:");
-        printMatrix(a);
-
-        System.out.println("B:");
-        printMatrix(b);
-
-        System.out.println("Sequential:");
-        printMatrix(sequential);
-
-        System.out.println("Parallel:");
-        printMatrix(parallel);
 
         /**
          * Question 1.4
          * Plot the execution time versus number of threads for parallel matrix multiplication
          **/
         System.out.println("Question 1.4");
-        List<Integer> numThreads = List.of(2, 4, 10, 20, 50, 75, 100, 200, 500);
-        double[][] timeData = new double[numThreads.size()][2];
+        List<Integer> numThreadsVals = List.of(1, 2, 3, 4, 8, 10, 20, 50);
+        double[][] timeData = new double[numThreadsVals.size()][2];
 
-        for (int i = 0; i < numThreads.size(); i++) {
-            int numThread = numThreads.get(i);
-            double elapsed = measureExecutionTime2(2000, true, numThread);
+        for (int i = 0; i < numThreadsVals.size(); i++) {
+            int numThread = numThreadsVals.get(i);
+            double elapsed = measureExecutionTimeForkJoin(2000, true, numThread);
             timeData[i][0] = numThread;
             timeData[i][1] = elapsed;
             System.out.println(numThread + " thread(s) - " + elapsed);
@@ -72,7 +74,7 @@ public class MatrixMultiplication {
 
         // plot 1.4
         double[][] empty_matrix = new double[timeData.length][((double[][]) timeData)[0].length];
-        Plot plot_1_4 = new Plot("Execution time versus number of threads for parallel matrix multiplication", "Number of threads", "Execution time (ms)", empty_matrix, timeData);
+        Plot plot_1_4 = new Plot("Execution time versus number of threads for 2000 x 2000 parallel matrix multiplication", "Number of threads", "Execution time (ms)", empty_matrix, timeData);
         plot_1_4.setAlwaysOnTop(true);
         plot_1_4.pack();
         plot_1_4.setSize(800, 600);
@@ -80,41 +82,41 @@ public class MatrixMultiplication {
         plot_1_4.setVisible(true);
 
         /**
-         * Question 1.5
-         * Plot the execution time versus matrix size (sequential & parallel) as size of matrix changes.
-         * Use number of threads for which the parallel execution time was minimum in previous plot.
-         **/
-        List<Integer> matrixSizes = List.of(100, 200, 500, 1000, 2000, 3000, 4000);
-        double[][] timeDataSequential = new double[matrixSizes.size()][2];
-        double[][] timeDataParallel = new double[matrixSizes.size()][2];
-        System.out.println("Question 1.5");
-
-        for(int i = 0; i < matrixSizes.size(); i++) {
-            int size = matrixSizes.get(i);
-
-            System.out.println("Matrix size: " + size);
-            // Sequential times
-            timeDataSequential[i][0] = size;
-            timeDataSequential[i][1] = measureExecutionTime2(size, false, 0);
-
-            // Parallel times
-            timeDataParallel[i][0] = size;
-            timeDataParallel[i][1] = measureExecutionTime2(size, true, bestPerformingNumThreads); //TODO: decide which parallel function to use
-        }
-
-        matrixSizes.forEach(size -> {
-
-        });
-
-        System.out.println("1.5 computation done");
-
-        // plot 1.5
-        Plot plot_1_5 = new Plot("Execution time as a function of matrix size for both parallel and sequential methods", "Matrix size", "Execution time (ms)", timeDataSequential, timeDataParallel);
-        plot_1_5.setAlwaysOnTop(true);
-        plot_1_5.pack();
-        plot_1_5.setSize(800, 600);
-        plot_1_5.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        plot_1_5.setVisible(true);
+//         * Question 1.5
+//         * Plot the execution time versus matrix size (sequential & parallel) as size of matrix changes.
+//         * Use number of threads for which the parallel execution time was minimum in previous plot.
+//         **/
+//        List<Integer> matrixSizes = List.of(100, 200, 500, 1000, 2000, 3000, 4000);
+//        double[][] timeDataSequential = new double[matrixSizes.size()][2];
+//        double[][] timeDataParallel = new double[matrixSizes.size()][2];
+//        System.out.println("Question 1.5");
+//
+//        for(int i = 0; i < matrixSizes.size(); i++) {
+//            int size = matrixSizes.get(i);
+//
+//            System.out.println("Matrix size: " + size);
+//            // Sequential times
+//            timeDataSequential[i][0] = size;
+//            timeDataSequential[i][1] = measureExecutionTimeForkJoin(size, false, 0);
+//
+//            // Parallel times
+//            timeDataParallel[i][0] = size;
+//            timeDataParallel[i][1] = measureExecutionTimeForkJoin(size, true, bestPerformingNumThreads); //TODO: decide which parallel function to use
+//        }
+//
+//        matrixSizes.forEach(size -> {
+//
+//        });
+//
+//        System.out.println("1.5 computation done");
+//
+//        // plot 1.5
+//        Plot plot_1_5 = new Plot("Execution time as a function of matrix size for both parallel and sequential methods", "Matrix size", "Execution time (ms)", timeDataSequential, timeDataParallel);
+//        plot_1_5.setAlwaysOnTop(true);
+//        plot_1_5.pack();
+//        plot_1_5.setSize(800, 600);
+//        plot_1_5.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+//        plot_1_5.setVisible(true);
 
 
         /**
@@ -283,6 +285,99 @@ public class MatrixMultiplication {
         return c;
     }
 
+
+    public static double[][] parallelMultiplyMatrixForkJoin(double[][] a, double[][] b, int numThreads) {
+        /**
+         * 1.2 Explain the parallel tasks defined in your code.
+         *
+         * For computing the multiplication of two matrices, we can use parallelism by effectively assigning a thread
+         * to compute the dot product of a row (i) and column (j) to get the resulting entry at (i, j) in the output
+         * matrix.
+         *
+         * We defined a MultiplierTask class, which implements Runnable, below that hold the computation required by each dispatched thread.
+         * Hence, in this present class, we define a fixed thread pool object which returns to us an 'ExecutorService'
+         * object through which we can 'execute' all our tasks as threads.
+         *
+         *
+         */
+
+        if (a == null) {
+            return b;
+        } else if (b == null) {
+            return a;
+        } else if (a[0].length != b.length){
+            return null;
+        }
+
+        double[][] c = new double[a.length][b[0].length];
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool(numThreads);
+
+
+        double[][] result = forkJoinPool.invoke(new MultiplierRecursiveTask(a, b));
+
+        return result;
+    }
+
+    public static class MultiplierRecursiveTask extends RecursiveTask<double[][]> {
+        private final int THRESHOLD = 20;
+        private double[][] a;
+        private double[][] b;
+
+        public MultiplierRecursiveTask(double[][] a, double[][] b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        protected double[][] compute() {
+            if (a.length + b[0].length <= THRESHOLD) {
+                return sequentialMultiplyMatrix(a, b);
+            } else {
+                double[][] result = new double[a.length][b[0].length];
+                int numRows = a.length / 2;
+                int numCols = b[0].length / 2;
+
+                double[][] aSlice1 = Arrays.copyOfRange(a, 0, numRows);
+                double[][] aSlice2 = Arrays.copyOfRange(a, numRows, a.length);
+
+                double[][] bSlice1 = getColumns(b, 0, numCols);
+                double[][] bSlice2 = getColumns(b, numCols, b[0].length);
+
+                MultiplierRecursiveTask quad1Task = new MultiplierRecursiveTask(aSlice1, bSlice1);
+                MultiplierRecursiveTask quad2Task = new MultiplierRecursiveTask(aSlice1, bSlice2);
+                MultiplierRecursiveTask quad3Task = new MultiplierRecursiveTask(aSlice2, bSlice1);
+                MultiplierRecursiveTask quad4Task = new MultiplierRecursiveTask(aSlice2, bSlice2);
+                invokeAll(quad1Task, quad2Task, quad3Task, quad4Task);
+                double[][] quad1 = quad1Task.join();
+                double[][] quad2 = quad2Task.join();
+                double[][] quad3 = quad3Task.join();
+                double[][] quad4 = quad4Task.join();
+
+                for(int i=0; i < quad1.length; i++) {
+                    System.arraycopy(quad1[i], 0, result[i], 0, quad1[i].length);
+                    System.arraycopy(quad2[i], 0, result[i], numCols, quad2[i].length);
+                }
+
+                for(int i=0; i < quad3.length; i++) {
+                    System.arraycopy(quad3[i], 0, result[i + numRows], 0, quad3[i].length);
+                    System.arraycopy(quad4[i], 0, result[i + numRows], numCols, quad4[i].length);
+                }
+
+                return result;
+            }
+        }
+
+        private double[][] getColumns(double[][] arr, int startIdx, int endIdx) {
+            double[][] result = new double[arr.length][endIdx - startIdx];
+            for(int i = 0; i < arr.length; i++) {
+                result[i] = Arrays.copyOfRange(arr[i], startIdx, endIdx);
+            }
+            return result;
+        }
+    }
+
+
+
     /**
      * Private class for deploying a multiplication task in a Thread.
      * Instances of this class are initialized in parallelMultiplyMatrix().
@@ -365,6 +460,22 @@ public class MatrixMultiplication {
         start = System.nanoTime();
         if (isParallel) {
             parallelMultiplyMatrix2(a, b, numThreads);
+        } else {
+            sequentialMultiplyMatrix(a, b);
+        }
+        end = System.nanoTime();
+        diff = (end - start)/1e6;
+        return diff;
+    }
+
+    public static double measureExecutionTimeForkJoin(int matrixSize, boolean isParallel, int numThreads) {
+        long start, end;
+        double diff;
+        double[][] a = generateRandomMatrix(matrixSize, matrixSize);
+        double[][] b = generateRandomMatrix(matrixSize, matrixSize);
+        start = System.nanoTime();
+        if (isParallel) {
+            parallelMultiplyMatrixForkJoin(a, b, numThreads);
         } else {
             sequentialMultiplyMatrix(a, b);
         }
