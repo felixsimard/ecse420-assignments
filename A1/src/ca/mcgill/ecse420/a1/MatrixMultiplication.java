@@ -73,6 +73,7 @@ public class MatrixMultiplication {
             // Parallel times
             timeDataParallel[i][0] = size;
             timeDataParallel[i][1] = measureExecutionTime(size, true, bestPerformingNumThreads);
+
         }
 
         matrixSizes.forEach(size -> {
