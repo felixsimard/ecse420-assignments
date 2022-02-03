@@ -1,17 +1,15 @@
 package ca.mcgill.ecse420.a1;
 
-import java.util.Random;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DiningPhilosophers {
 
-	static final int NUMBER_OF_PHILOSOPHERS = 50;
+	static final int NUMBER_OF_PHILOSOPHERS = 5;
 	static Philosopher[] philosophers = new Philosopher[NUMBER_OF_PHILOSOPHERS];
 	static Chopstick[] chopsticks = new Chopstick[NUMBER_OF_PHILOSOPHERS];
-	static Lock pickUpChopstickLock = new ReentrantLock();
-	
+
 	public static void main(String[] args) {
 
 		// will initialize arrays with philosophers and chopsticks
@@ -28,124 +26,92 @@ public class DiningPhilosophers {
 		}
 	}
 
+	/**
+	 * Philosopher class implements run method that is an infinite while loop where the philosopher will think for a
+	 * random time in between 0 and 1 seconds, acquire the chopsticks they need to eat, and eat for a random time in
+	 * between 0 and 1 seconds.
+	 */
 	public static class Philosopher implements Runnable {
 		int id;
-		Chopstick c1;
-		Chopstick c2;
 		int chopstickOne;
 		int chopstickTwo;
 		boolean isEating = false; 	// if isEating is false then philosopher is thinking,
 									// if isEating is true then philosopher has two chopsticks.
-		Random rand;
 
 		public Philosopher(int id) {
 			this.id = id;
 
-			if (this.id == 0) {	// break the cycle
-				this.chopstickOne = this.id;
-				this.chopstickTwo = NUMBER_OF_PHILOSOPHERS - 1;
+			if (id == 0) {	// this will break the cycle
+				this.chopstickOne = NUMBER_OF_PHILOSOPHERS - 1;
+				this.chopstickTwo = 0;
 			} else {
-				this.chopstickOne = this.id - 1;
-				this.chopstickTwo = this.id;
+				this.chopstickOne = this.id;
+				this.chopstickTwo = (this.id + 1) % NUMBER_OF_PHILOSOPHERS;
 			}
-
-			rand = new Random();
 		}
 
-		public void getChopsticksNoCycle() {
+		public void think() {
+			System.out.printf("Philosopher %d: is thinking...\n", this.id);
+			try {
+				Thread.sleep((long) (Math.random() * 1000));	// will think for any time between 0 and 1 seconds
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			System.out.printf("Philosopher %d: is done thinking...\n", this.id);
+		}
+
+		public void eat() {
+			isEating = true;
+			System.out.printf("Philosopher %d: is eating...\n", this.id);
+			try {
+				Thread.sleep((long) (Math.random() * 1000));	// will eat for any time between 0 and 1 seconds
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			isEating = false;
+			System.out.printf("Philosopher %d: is done eating...\n", this.id);
+		}
+
+		public void getChopsticks() {
+			// get chopstick 1
+			System.out.printf("Philosopher %d: attempting to acquire chopstick %d\n", this.id, chopstickOne);
 			try {
 				chopsticks[chopstickOne].pickUp(this.id);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			System.out.printf("Philosopher %d: acquired chopstick %d\n", this.id, chopstickOne);
+
+			// get chopstick 2
+			System.out.printf("Philosopher %d: attempting to acquire chopstick %d\n", this.id, chopstickTwo);
 			try {
 				chopsticks[chopstickTwo].pickUp(this.id);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-		}
-
-		public void getChopsticks() {
-//			pickUpChopstickLock.lock();
-			if (this.id % 2 == 0) {
-				System.out.printf("Philosopher %d: attempting to acquire chopstick %d\n", this.id, chopstickTwo);
-				try {
-					chopsticks[chopstickTwo].pickUp(this.id);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				System.out.printf("Philosopher %d: acquired chopstick %d\n", this.id, chopstickTwo);
-
-
-				System.out.printf("Philosopher %d: attempting to acquire chopstick %d\n", this.id, chopstickOne);
-				try {
-					chopsticks[chopstickOne].pickUp(this.id);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				System.out.printf("Philosopher %d: acquired chopstick %d\n", this.id, chopstickOne);
-			} else {
-				System.out.printf("Philosopher %d: attempting to acquire chopstick %d\n", this.id, chopstickOne);
-				try {
-					chopsticks[chopstickOne].pickUp(this.id);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				System.out.printf("Philosopher %d: acquired chopstick %d\n", this.id, chopstickOne);
-
-
-				System.out.printf("Philosopher %d: attempting to acquire chopstick %d\n", this.id, chopstickTwo);
-				try {
-					chopsticks[chopstickTwo].pickUp(this.id);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				System.out.printf("Philosopher %d: acquired chopstick %d\n", this.id, chopstickTwo);
-			}
-
-
-
-//			pickUpChopstickLock.unlock();
-
-		}
-
-		private void think() {
-			int thinkTime = rand.nextInt(10000);
-			try {
-				Thread.sleep(thinkTime);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			System.out.printf("Philosopher %d: acquired chopstick %d\n", this.id, chopstickTwo);
 		}
 
 		@Override
 		public void run() {
-			// acquire chopsticks
-			// must first figure out which chopsticks the philosopher can pick up
-			while(true) {
-
-				think();	// think for a random amount of time
-				getChopsticksNoCycle();
-
-				// eating
-				int eatTime = rand.nextInt(10000);
-				System.out.printf("Philosopher %d is eating\n", this.id);
-				try {
-					Thread.sleep(eatTime);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				System.out.printf("Philosopher %d is done eating\n", this.id);
-
+			while (true) {
+				this.think();
+				this.getChopsticks();
+				this.eat();
 				// release chopsticks
 				chopsticks[chopstickOne].putDown();
 				chopsticks[chopstickTwo].putDown();
 			}
-
 		}
 
 	}
 
+	/**
+	 * This class represents Chopsticks. Each chopstick has a lock and a condition variable.
+	 * The lock is used to control access to the philosopherId and inUse variable.
+	 * The condition variable is used in the pick up and put down function to signal to other threads that the
+	 * chopstick they need is now availble.
+	 */
 	public static class Chopstick {
 		int id;
 		private boolean inUse = false;
@@ -163,26 +129,20 @@ public class DiningPhilosophers {
 		 */
 		public void pickUp(int philosopherId) throws InterruptedException {
 			lock.lock();
-
 			while (this.inUse) {
 				System.out.printf("Philosopher %d is blocked\n", philosopherId);
 				condition.await();
 			}
-
 			this.philosopherId = philosopherId;
 			this.inUse = true;
-
 			lock.unlock();
 		}
 
 		public void putDown() {
 			lock.lock();
-
 			this.philosopherId = -1;
 			this.inUse = false;
-
 			condition.signalAll();
-
 			lock.unlock();
 		}
 
