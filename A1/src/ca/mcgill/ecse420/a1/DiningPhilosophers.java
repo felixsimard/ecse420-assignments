@@ -1,5 +1,6 @@
 package ca.mcgill.ecse420.a1;
 
+import java.util.Random;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,17 +36,33 @@ public class DiningPhilosophers {
 		int chopstickTwo;
 		boolean isEating = false; 	// if isEating is false then philosopher is thinking,
 									// if isEating is true then philosopher has two chopsticks.
+		Random rand;
 
 		public Philosopher(int id) {
 			this.id = id;
 
-			if (this.id == 0) {
-				this.chopstickOne = NUMBER_OF_PHILOSOPHERS - 1;
-			}else {
+			if (this.id == 0) {	// break the cycle
+				this.chopstickOne = this.id;
+				this.chopstickTwo = NUMBER_OF_PHILOSOPHERS - 1;
+			} else {
 				this.chopstickOne = this.id - 1;
+				this.chopstickTwo = this.id;
 			}
 
-			this.chopstickTwo = this.id;
+			rand = new Random();
+		}
+
+		public void getChopsticksNoCycle() {
+			try {
+				chopsticks[chopstickOne].pickUp(this.id);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			try {
+				chopsticks[chopstickTwo].pickUp(this.id);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 
 		public void getChopsticks() {
@@ -92,24 +109,38 @@ public class DiningPhilosophers {
 
 		}
 
+		private void think() {
+			int thinkTime = rand.nextInt(10000);
+			try {
+				Thread.sleep(thinkTime);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
 		@Override
 		public void run() {
 			// acquire chopsticks
 			// must first figure out which chopsticks the philosopher can pick up
-			this.getChopsticks();
+			while(true) {
 
-			// eating
-			System.out.printf("Philosopher %d is eating\n", this.id);
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+				think();	// think for a random amount of time
+				getChopsticksNoCycle();
+
+				// eating
+				int eatTime = rand.nextInt(10000);
+				System.out.printf("Philosopher %d is eating\n", this.id);
+				try {
+					Thread.sleep(eatTime);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				System.out.printf("Philosopher %d is done eating\n", this.id);
+
+				// release chopsticks
+				chopsticks[chopstickOne].putDown();
+				chopsticks[chopstickTwo].putDown();
 			}
-			System.out.printf("Philosopher %d is done eating\n", this.id);
-
-			// release chopsticks
-			chopsticks[chopstickOne].putDown();
-			chopsticks[chopstickTwo].putDown();
 
 		}
 
