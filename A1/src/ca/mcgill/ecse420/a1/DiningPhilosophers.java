@@ -18,7 +18,6 @@ public class DiningPhilosophers {
 			philosophers[i] = new Philosopher(i);
 		}
 
-
 		// will start all the threads (make philosophers begin eating)
 		for (Philosopher p : philosophers) {
 			Thread t = new Thread(p);
