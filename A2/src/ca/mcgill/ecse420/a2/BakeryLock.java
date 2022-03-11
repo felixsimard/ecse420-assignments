@@ -35,10 +35,8 @@ public class BakeryLock implements Lock {
 
         flag[i] = true;
 
-        synchronized (label) {
-            label[i] = Arrays.stream(label).max().getAsInt() + 1;
-            System.out.println("\nThread " + myId.get() + " got label " + label[i]);
-        }
+        label[i] = Arrays.stream(label).max().getAsInt() + 1;
+        System.out.println("\nThread " + myId.get() + " got label " + label[i]);
 
         boolean spin = true;
         do {
