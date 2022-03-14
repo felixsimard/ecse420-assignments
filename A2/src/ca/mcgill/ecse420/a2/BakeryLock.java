@@ -2,62 +2,69 @@ package ca.mcgill.ecse420.a2;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 public class BakeryLock implements Lock {
     int n;
-    boolean[] flag;
-    int[] label;
+    AtomicBoolean[] flag;
+    AtomicInteger[] label;
     ThreadLocal<Integer> myId = ThreadLocal.withInitial(() -> -1);
     ArrayList<Integer> availableIds;
 
     public BakeryLock(int n) {
         this.n = n;
-        flag = new boolean[n];
-        label = new int[n];
+        flag = new AtomicBoolean[n];
+        label = new AtomicInteger[n];
         availableIds = new ArrayList<>();
         for (int i=0; i<n; i++){
             availableIds.add(i);
+            label[i] = new AtomicInteger();
+            flag[i] = new AtomicBoolean();
         }
     }
 
     @Override
     public void lock() {
-
-
         if (myId.get() == -1) setMyId();
-
-        System.out.println("\nThread " + myId.get() + " locking...");
-
+        //System.out.println("\nThread " + myId.get() + " locking...");
         int i = myId.get();
+        flag[i].set(true);
 
-        flag[i] = true;
-
-        label[i] = Arrays.stream(label).max().getAsInt() + 1;
-        System.out.println("\nThread " + myId.get() + " got label " + label[i]);
+        Comparator<AtomicInteger> comparator = new Comparator<AtomicInteger>() {
+            @Override
+            public int compare(AtomicInteger o1, AtomicInteger o2) {
+                if (o1.get() < o2.get()) return -1;
+                if (o1.get() > o2.get()) return 1;
+                return 0;
+            }
+        };
+        label[i].set(Arrays.stream(label).max(comparator).get().get() + 1);
+        //System.out.println("\nThread " + myId.get() + " got label " + label[i]);
 
         boolean spin = true;
         do {
             spin = false;
             for (int j=0; j<n; j++) {
-                if (j != i && flag[j]) {
-                    if (label[j] < label[i]) spin = true;
-                    if (label[j] == label[i] && j < i) spin = true;
+                if (j != i && flag[j].get()) {
+                    if (label[j].get() < label[i].get()) spin = true;
+                    if (label[j].get() == label[i].get() && j < i) spin = true;
                 }
             }
 
         } while (spin);
-
-        System.out.println("\nThread " + myId.get() + " locked.");
+        //System.out.println("\nThread " + myId.get() + " locked.");
     }
 
     @Override
     public void unlock() {
-        System.out.println("\nThread " + myId.get() + " unlocking...");
-        flag[myId.get()] = false;
-        System.out.println("Thread " + myId.get() + " unlocked.");
+        //System.out.println("\nThread " + myId.get() + " unlocking...");
+        flag[myId.get()].set(false);
+        //System.out.println("Thread " + myId.get() + " unlocked.");
     }
 
     @Override

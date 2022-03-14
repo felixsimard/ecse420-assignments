@@ -11,7 +11,7 @@ public class Q1Locks {
 
     public static void main(String[] args) throws InterruptedException {
         int n = 10;
-        boolean filterLock = false;
+        boolean filterLock = true;
         Lock lock = getLock(filterLock, n);
 
         Thread[] threads = new Thread[n];
