@@ -18,6 +18,8 @@ public class BoundedQueue {
 
     public static ArrayList<Thread> allThreads = new ArrayList<>();
 
+    public static int NUM_THREADS = 2;
+
     /**
      * Lock-based, array-based queue
      */
@@ -261,7 +263,7 @@ public class BoundedQueue {
         lbq = new LockBasedQueue(5);
 
         // Test lock-based queue
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < NUM_THREADS; i++) {
             Thread t = new Thread(new QueueWorker(i, true));
             allThreads.add(t);
             t.start();
@@ -276,7 +278,7 @@ public class BoundedQueue {
         lfq = new LockFreeQueue(3);
 
         // Test lock-free queue
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < NUM_THREADS; i++) {
             Thread t = new Thread(new QueueWorker(i, false));
             allThreads.add(t);
             t.start();
