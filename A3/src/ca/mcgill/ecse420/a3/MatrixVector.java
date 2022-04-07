@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.*;
 
-public class matrixVector {
+public class MatrixVector {
     static int THRESHOLD = 4;
 
     public static void main(String args[]) {
@@ -16,13 +16,12 @@ public class matrixVector {
         int[] v1 = createRandomVector(2000, 10);
 //        prettyPrint(v1);
 
-
         long startTimeSeq = System.currentTimeMillis();
         int[] r = sequentialMatrixVectorMultiplier(m1, v1);
         long stopTimeSeq = System.currentTimeMillis();
 
         long startTimePar = System.currentTimeMillis();
-        int[] r2 = parallelMatrixVectorMultiplier(m1, v1, 20);
+        int[] r2 = parallelMatrixVectorMultiplier(m1, v1, 50);
         long stopTimePar = System.currentTimeMillis();
 
 //        prettyPrint(r2);
@@ -92,7 +91,7 @@ public class matrixVector {
 
     /**
      * The parallel implementation of matrix vector multiplication. Uses a ForJoinPool and recursively
-     * divides the computations untill a certain threshold is reached at which point it does sequential execution.
+     * divides the computations until a certain threshold is reached at which point it does sequential execution.
      *
      * @param matrix
      * @param vector
