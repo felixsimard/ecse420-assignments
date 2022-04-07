@@ -13,29 +13,29 @@ public class BoundedQueue {
 
     public static SplittableRandom random = new SplittableRandom();
 
-    public static LockBasedQueue lbq;
-    public static LockFreeQueue lfq;
+    public static LockBasedQueue<Integer> lbq;
+    public static LockFreeQueue<Integer> lfq;
 
     public static ArrayList<Thread> allThreads = new ArrayList<>();
 
-    public static int NUM_THREADS = 2;
+    public static int NUM_THREADS = 4;
 
     /**
      * Lock-based, array-based queue
      */
-    public static class LockBasedQueue {
+    public static class LockBasedQueue<T> {
         ReentrantLock headLock;
         ReentrantLock tailLock;
         AtomicInteger size;
         AtomicInteger headIndex;
         AtomicInteger tailIndex;
         int capacity;
-        Object[] items;
+        T[] items;
         Condition notEmptyCondition, notFullCondition;
 
         public LockBasedQueue(int capacity) {
             this.capacity = capacity;
-            this.items = new Object[capacity];
+            this.items = (T[]) new Object[capacity];
             this.size = new AtomicInteger(0);
             this.headLock = new ReentrantLock();
             this.tailLock = new ReentrantLock();
@@ -53,7 +53,7 @@ public class BoundedQueue {
             tailLock.lock();
             try {
                 while (size.get() == capacity) notFullCondition.await();
-                items[tailIndex.get()] = x;
+                items[tailIndex.get()] = (T) x;
                 if (tailIndex.incrementAndGet() == capacity) tailIndex.set(0);
                 if (size.getAndIncrement() == 0) {
                     wakeDequeuers = true;
@@ -74,18 +74,22 @@ public class BoundedQueue {
         /**
          * Dequeue
          */
-        public void dequeue() throws InterruptedException {
+        public T dequeue() throws InterruptedException {
+            Object x;
             boolean wakeEnqueuers = false;
             headLock.lock();
             try {
                 while (size.get() == 0) notEmptyCondition.await();
-                Object x = items[headIndex.get()];
+                x = items[headIndex.get()];
                 items[headIndex.get()] = null;
                 if (headIndex.incrementAndGet() == capacity) {
                     headIndex.set(0);
+                    //wakeEnqueuers = true;
+                }
+                if (size.getAndDecrement() == capacity) {
                     wakeEnqueuers = true;
                 }
-                size.decrementAndGet();
+                //size.decrementAndGet();
             } finally {
                 headLock.unlock();
             }
@@ -97,7 +101,7 @@ public class BoundedQueue {
                     tailLock.unlock();
                 }
             }
-
+            return (T) x;
         }
 
         public void printQueue() {
@@ -116,16 +120,16 @@ public class BoundedQueue {
     /**
      * Lock-free array based queue
      */
-    public static class LockFreeQueue {
+    public static class LockFreeQueue<T> {
         AtomicInteger headIndex;
         AtomicInteger tailIndex;
         AtomicInteger size;
         int capacity;
-        AtomicReferenceArray<Object> items;
+        AtomicReferenceArray<T> items;
 
         public LockFreeQueue(int capacity) {
             this.capacity = capacity;
-            this.items = new AtomicReferenceArray<Object>(capacity);
+            this.items = new AtomicReferenceArray<T>(capacity);
             this.size = new AtomicInteger(0);
             this.headIndex = new AtomicInteger(0);
             this.tailIndex = new AtomicInteger(0);
@@ -138,7 +142,7 @@ public class BoundedQueue {
             while (true) {
                 Object last = items.get(tailIndex.get());
                 if (last == items.get(tailIndex.get())) {
-                    if (items.compareAndSet(tailIndex.get(), null, x)) {
+                    if (items.compareAndSet(tailIndex.get(), (T) null, (T) x)) {
                         size.incrementAndGet();
                         if (tailIndex.incrementAndGet() == capacity) tailIndex.set(0);
                         return;
@@ -150,14 +154,14 @@ public class BoundedQueue {
         /**
          * Dequeue
          */
-        public void dequeue() {
+        public T dequeue() {
             while (true) {
                 Object first = items.get(headIndex.get());
                 if (first == items.get(headIndex.get())) {
-                    if (items.compareAndSet(headIndex.get(), first, null)) {
+                    if (items.compareAndSet(headIndex.get(), (T) first, null)) {
                         size.decrementAndGet();
                         if (headIndex.incrementAndGet() == capacity) headIndex.set(0);
-                        return;
+                        return (T) first;
                     }
                 }
             }
@@ -191,7 +195,11 @@ public class BoundedQueue {
         @Override
         public void run() {
             while (numActionsToPerform > 0) {
-                QueueAction qa = pickAction();
+                //QueueAction qa = pickAction();
+                QueueAction qa = QueueAction.DEQUEUE;
+                if (this.id % 2 == 0) {
+                    qa = QueueAction.ENQUEUE;
+                }
                 try {
                     performAction(qa, isLockBased);
                 } catch (InterruptedException e) {
@@ -270,12 +278,14 @@ public class BoundedQueue {
         }
         joinAllThreads();
 
+        lbq.printQueue();
+
         //----------------------------------
 
         System.out.println("\n\nLock-Free Queue tests:");
 
         // Lock-free queue (array based)
-        lfq = new LockFreeQueue(3);
+        lfq = new LockFreeQueue(5);
 
         // Test lock-free queue
         for (int i = 0; i < NUM_THREADS; i++) {
@@ -286,8 +296,8 @@ public class BoundedQueue {
 
         joinAllThreads();
 
-        System.out.println("\n\n------------- Done");
+        lfq.printQueue();
 
-
+        System.out.println("\n\nDone");
     }
 }
